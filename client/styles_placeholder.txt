@@ -1,0 +1,1 @@
+PLACEHOLDER: Add `styles.css` for client styling. Keep styles modular (reset, layout, HUD, game canvas styles).
