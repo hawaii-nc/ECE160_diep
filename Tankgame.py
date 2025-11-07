@@ -18,7 +18,7 @@ RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BG_COLOR = (30, 30, 30)
 
-# Game constants
+# Game constantssss
 FPS = 60
 BOT_SPAWN_RATE = 100
 UPGRADE_COST = 5
