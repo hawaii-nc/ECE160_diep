@@ -20,8 +20,9 @@ BG_COLOR = (30, 30, 30)
 
 # Game constants
 FPS = 60
-BOT_SPAWN_RATE = 50
+BOT_SPAWN_RATE = 100
 UPGRADE_COST = 5
+MAX_BOTS = 5
 
 # Bullet class
 class Bullet:
@@ -50,16 +51,15 @@ class Tank:
         self.y = y
         self.color = color
         self.radius = 20
-        self.health = 100
+        self.max_health = 100
+        self.health = self.max_health
         self.speed = 3
         self.bullet_speed = 7
         self.damage = 10
         self.is_player = is_player
         self.exp = 0
         self.cooldown = 0
-        self.regen_rate = 0.05  # health per frame
-        self.max_health = 100
-
+        self.regen_rate = 0.05
 
     def move(self, keys):
         if keys[pygame.K_w]: self.y -= self.speed
@@ -73,26 +73,44 @@ class Tank:
         angle = math.atan2(target_y - self.y, target_x - self.x)
         return Bullet(self.x, self.y, angle, self.bullet_speed, self.damage, "player" if self.is_player else "bot")
 
+    def regenerate(self):
+        if self.health < self.max_health:
+            self.health = min(self.max_health, self.health + self.regen_rate)
+
     def draw(self, win, cam_x, cam_y):
         screen_x = int(self.x - cam_x)
         screen_y = int(self.y - cam_y)
         pygame.draw.circle(win, self.color, (screen_x, screen_y), self.radius)
-        pygame.draw.rect(win, RED, (screen_x - 20, screen_y - 30, 40, 5))
-        pygame.draw.rect(win, GREEN, (screen_x - 20, screen_y - 30, 40 * (self.health / 100), 5))
 
-    def regenerate(self):
-        if self.health < self.max_health:
-            self.health = min(self.max_health, self.health + self.regen_rate)
-# Reset game function
+        # Health bar
+        bar_width = 40
+        bar_height = 5
+        bar_x = screen_x - bar_width // 2
+        bar_y = screen_y - self.radius - 10
+        pygame.draw.rect(win, RED, (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(win, GREEN, (bar_x, bar_y, bar_width * (self.health / self.max_health), bar_height))
+
+def draw_barrel(win, tank, angle, cam_x, cam_y):
+    barrel_length = 30
+    barrel_width = 6
+    start_x = tank.x - cam_x
+    start_y = tank.y - cam_y
+
+    barrel_surface = pygame.Surface((barrel_length, barrel_width), pygame.SRCALPHA)
+    barrel_surface.fill(tank.color)
+    rotated = pygame.transform.rotate(barrel_surface, -math.degrees(angle))
+    rect = rotated.get_rect(center=(start_x + math.cos(angle) * barrel_length / 2,
+                                    start_y + math.sin(angle) * barrel_length / 2))
+    win.blit(rotated, rect)
+
 def reset_game():
-    return Tank(WORLD_WIDTH//2, WORLD_HEIGHT//2, WHITE, True), [], [], 0, False
+    return Tank(WORLD_WIDTH//2, WORLD_HEIGHT//2, WHITE, True), [], [], 0, False, 1
 
-# Main game function
 def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    player, bullets, bots, frame_count, game_over = reset_game()
+    player, bullets, bots, frame_count, game_over, difficulty_level = reset_game()
 
     while True:
         clock.tick(FPS)
@@ -107,7 +125,7 @@ def main():
                 pygame.quit()
                 sys.exit()
             if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                player, bullets, bots, frame_count, game_over = reset_game()
+                player, bullets, bots, frame_count, game_over, difficulty_level = reset_game()
             if not game_over:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     bullets.append(player.shoot(mouse_x + cam_x, mouse_y + cam_y))
@@ -122,24 +140,35 @@ def main():
                         player.damage += 2
                         player.exp -= UPGRADE_COST
                     elif event.key == pygame.K_4:
-                        player.health = min(100, player.health + 20)
+                        player.max_health += 20
+                        player.health = min(player.max_health, player.health + 20)
                         player.exp -= UPGRADE_COST
 
         if not game_over:
             player.move(keys)
-            player.draw(WIN, cam_x, cam_y)
             player.regenerate()
-
+            angle = math.atan2(mouse_y + cam_y - player.y, mouse_x + cam_x - player.x)
+            draw_barrel(WIN, player, angle, cam_x, cam_y)
+            player.draw(WIN, cam_x, cam_y)
 
             frame_count += 1
-            if frame_count % BOT_SPAWN_RATE == 0:
-                bots.append(Tank(random.randint(0, WORLD_WIDTH), random.randint(0, WORLD_HEIGHT), GREEN))
+            if frame_count % (FPS * 10) == 0:
+                difficulty_level += 1
+
+            if frame_count % BOT_SPAWN_RATE == 0 and len(bots) < MAX_BOTS:
+                bot = Tank(random.randint(0, WORLD_WIDTH), random.randint(0, WORLD_HEIGHT), GREEN)
+                bot.damage += difficulty_level * 2
+                bot.speed += difficulty_level * 0.2
+                bot.bullet_speed += difficulty_level * 0.3
+                bots.append(bot)
 
             for bot in bots[:]:
+                angle = math.atan2(player.y - bot.y, player.x - bot.x)
+                draw_barrel(WIN, bot, angle, cam_x, cam_y)
                 bot.draw(WIN, cam_x, cam_y)
                 if bot.cooldown == 0:
                     bullets.append(bot.shoot(player.x, player.y))
-                    bot.cooldown = 120
+                    bot.cooldown = 60
                 else:
                     bot.cooldown -= 1
 
@@ -163,9 +192,10 @@ def main():
             if player.health <= 0:
                 game_over = True
 
-            # HUD
             hud = font.render(f"EXP: {player.exp} | 1-Speed 2-Bullet 3-Damage 4-Health (Cost: {UPGRADE_COST})", True, WHITE)
+            diff_text = font.render(f"Difficulty: {difficulty_level}", True, WHITE)
             WIN.blit(hud, (10, 10))
+            WIN.blit(diff_text, (10, 30))
         else:
             over_text = font.render("GAME OVER - Press R to Restart", True, RED)
             WIN.blit(over_text, (WIDTH//2 - 100, HEIGHT//2))
@@ -174,4 +204,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
