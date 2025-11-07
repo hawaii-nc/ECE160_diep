@@ -1,6 +1,5 @@
 PLACEHOLDER: Add `app.js` (client runtime). Responsibilities:
 - Initialize canvas and renderer
-- Connect to the server
 - Send input, receive snapshots
 - Render entities and HUD
 
