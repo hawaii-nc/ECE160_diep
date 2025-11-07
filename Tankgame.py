@@ -3,7 +3,6 @@ import math
 import random
 import sys
 
-# Initialize Pygame
 pygame.init()
 
 # Screen and world settings
@@ -20,19 +19,19 @@ BG_COLOR = (30, 30, 30)
 
 # Game constants
 FPS = 60
-BOT_SPAWN_RATE = 100
+BOT_SPAWN_RATE = 50
 UPGRADE_COST = 5
 MAX_BOTS = 5
 
-# Bullet class
 class Bullet:
-    def __init__(self, x, y, angle, speed, damage, owner):
+    def __init__(self, x, y, angle, speed, damage, owner, owner_id=None):
         self.x = x
         self.y = y
         self.angle = angle
         self.speed = speed
         self.damage = damage
         self.owner = owner
+        self.owner_id = owner_id
         self.radius = 4
 
     def move(self):
@@ -44,7 +43,6 @@ class Bullet:
         screen_y = int(self.y - cam_y)
         pygame.draw.circle(win, RED if self.owner == "player" else GREEN, (screen_x, screen_y), self.radius)
 
-# Tank class
 class Tank:
     def __init__(self, x, y, color, is_player=False):
         self.x = x
@@ -60,6 +58,11 @@ class Tank:
         self.exp = 0
         self.cooldown = 0
         self.regen_rate = 0.05
+        self.level = 1
+        self.bot_kills = 0
+        self.specialization = None
+        self.specialization_count = 0
+        self.id = None
 
     def move(self, keys):
         if keys[pygame.K_w]: self.y -= self.speed
@@ -69,20 +72,34 @@ class Tank:
         self.x = max(0, min(WORLD_WIDTH, self.x))
         self.y = max(0, min(WORLD_HEIGHT, self.y))
 
-    def shoot(self, target_x, target_y):
-        angle = math.atan2(target_y - self.y, target_x - self.x)
-        return Bullet(self.x, self.y, angle, self.bullet_speed, self.damage, "player" if self.is_player else "bot")
-
     def regenerate(self):
         if self.health < self.max_health:
             self.health = min(self.max_health, self.health + self.regen_rate)
+
+    def shoot(self, target_x, target_y):
+        angle = math.atan2(target_y - self.y, target_x - self.x)
+        bullets = []
+
+        if self.specialization == "dual_barrel":
+            bullets.append(Bullet(self.x, self.y, angle, self.bullet_speed, self.damage, "player", self.id))
+            bullets.append(Bullet(self.x, self.y, angle + math.pi, self.bullet_speed, self.damage, "player", self.id))
+        elif self.specialization == "twin_gun":
+            spread = 0.1
+            bullets.append(Bullet(self.x, self.y, angle - spread, self.bullet_speed, self.damage, "player", self.id))
+            bullets.append(Bullet(self.x, self.y, angle + spread, self.bullet_speed, self.damage, "player", self.id))
+        elif self.specialization == "heavy_cannon":
+            bullets.append(Bullet(self.x, self.y, angle, self.bullet_speed * 0.6, self.damage * 2, "player", self.id))
+        elif self.specialization == "sniper_barrel":
+            bullets.append(Bullet(self.x, self.y, angle, self.bullet_speed * 1.5, self.damage * 1.5, "player", self.id))
+        else:
+            bullets.append(Bullet(self.x, self.y, angle, self.bullet_speed, self.damage, "player", self.id))
+
+        return bullets
 
     def draw(self, win, cam_x, cam_y):
         screen_x = int(self.x - cam_x)
         screen_y = int(self.y - cam_y)
         pygame.draw.circle(win, self.color, (screen_x, screen_y), self.radius)
-
-        # Health bar
         bar_width = 40
         bar_height = 5
         bar_x = screen_x - bar_width // 2
@@ -95,7 +112,6 @@ def draw_barrel(win, tank, angle, cam_x, cam_y):
     barrel_width = 6
     start_x = tank.x - cam_x
     start_y = tank.y - cam_y
-
     barrel_surface = pygame.Surface((barrel_length, barrel_width), pygame.SRCALPHA)
     barrel_surface.fill(tank.color)
     rotated = pygame.transform.rotate(barrel_surface, -math.degrees(angle))
@@ -104,13 +120,15 @@ def draw_barrel(win, tank, angle, cam_x, cam_y):
     win.blit(rotated, rect)
 
 def reset_game():
-    return Tank(WORLD_WIDTH//2, WORLD_HEIGHT//2, WHITE, True), [], [], 0, False, 1
+    player = Tank(WORLD_WIDTH//2, WORLD_HEIGHT//2, WHITE, True)
+    player.id = -1
+    return player, [], [], 0, False, 1, False, 0
 
 def main():
     clock = pygame.time.Clock()
     font = pygame.font.SysFont(None, 24)
 
-    player, bullets, bots, frame_count, game_over, difficulty_level = reset_game()
+    player, bullets, bots, frame_count, game_over, difficulty_level, show_specialization_menu, bot_id_counter = reset_game()
 
     while True:
         clock.tick(FPS)
@@ -125,11 +143,25 @@ def main():
                 pygame.quit()
                 sys.exit()
             if game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                player, bullets, bots, frame_count, game_over, difficulty_level = reset_game()
+                player, bullets, bots, frame_count, game_over, difficulty_level, show_specialization_menu, bot_id_counter = reset_game()
             if not game_over:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    bullets.append(player.shoot(mouse_x + cam_x, mouse_y + cam_y))
-                if event.type == pygame.KEYDOWN and player.exp >= UPGRADE_COST:
+                if show_specialization_menu and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        player.specialization = "dual_barrel"
+                        show_specialization_menu = False
+                    elif event.key == pygame.K_2:
+                        player.specialization = "twin_gun"
+                        show_specialization_menu = False
+                    elif event.key == pygame.K_3:
+                        player.specialization = "heavy_cannon"
+                        show_specialization_menu = False
+                    elif event.key == pygame.K_4:
+                        player.specialization = "sniper_barrel"
+                        show_specialization_menu = False
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    new_bullets = player.shoot(mouse_x + cam_x, mouse_y + cam_y)
+                    bullets.extend(new_bullets)
+                elif event.type == pygame.KEYDOWN and player.exp >= UPGRADE_COST:
                     if event.key == pygame.K_1:
                         player.speed += 0.5
                         player.exp -= UPGRADE_COST
@@ -147,56 +179,84 @@ def main():
         if not game_over:
             player.move(keys)
             player.regenerate()
+
+            # Specialization every 2 levels (20 kills)
+            if player.level % 2 == 0 and player.specialization_count < player.level // 2:
+                show_specialization_menu = True
+                player.specialization_count += 1
+
             angle = math.atan2(mouse_y + cam_y - player.y, mouse_x + cam_x - player.x)
             draw_barrel(WIN, player, angle, cam_x, cam_y)
             player.draw(WIN, cam_x, cam_y)
 
             frame_count += 1
-            if frame_count % (FPS * 10) == 0:
-                difficulty_level += 1
-
             if frame_count % BOT_SPAWN_RATE == 0 and len(bots) < MAX_BOTS:
                 bot = Tank(random.randint(0, WORLD_WIDTH), random.randint(0, WORLD_HEIGHT), GREEN)
+                bot.id = bot_id_counter
+                bot_id_counter += 1
                 bot.damage += difficulty_level * 2
                 bot.speed += difficulty_level * 0.2
                 bot.bullet_speed += difficulty_level * 0.3
                 bots.append(bot)
 
-# Bot AI (Nathan)
             for bot in bots[:]:
                 angle = math.atan2(player.y - bot.y, player.x - bot.x)
                 draw_barrel(WIN, bot, angle, cam_x, cam_y)
                 bot.draw(WIN, cam_x, cam_y)
                 if bot.cooldown == 0:
-                    bullets.append(bot.shoot(player.x, player.y))
-                    bot.cooldown = 60
+                    new_bullet = bot.shoot(player.x, player.y)[0]
+                    new_bullet.owner = "bot"
+                    new_bullet.owner_id = bot.id
+                    bullets.append(new_bullet)
+                    bot.cooldown = 120
                 else:
                     bot.cooldown -= 1
 
-            for bullet in bullets[:]:
+            bullets_to_remove = []
+
+            for bullet in bullets:
                 bullet.move()
                 bullet.draw(WIN, cam_x, cam_y)
+
                 if bullet.owner == "player":
-                    for bot in bots[:]:
+                    for bot in bots:
                         if math.hypot(bullet.x - bot.x, bullet.y - bot.y) < bot.radius:
                             bot.health -= bullet.damage
-                            bullets.remove(bullet)
+                            bullets_to_remove.append(bullet)
                             if bot.health <= 0:
                                 bots.remove(bot)
                                 player.exp += 5
+                                player.bot_kills += 1
+                                if player.bot_kills % 10 == 0:
+                                    player.level += 1
+                                    difficulty_level += 1
                             break
-                else:
+
+                elif bullet.owner == "bot":
+                    for bot in bots:
+                        if bullet.owner_id == bot.id:
+                            continue  # Skip self-hit
+                        continue  # Skip bot-on-bot damage
+
                     if math.hypot(bullet.x - player.x, bullet.y - player.y) < player.radius:
                         player.health -= bullet.damage
-                        bullets.remove(bullet)
+                        bullets_to_remove.append(bullet)
+
+            for b in bullets_to_remove:
+                if b in bullets:
+                    bullets.remove(b)
 
             if player.health <= 0:
                 game_over = True
 
-            hud = font.render(f"EXP: {player.exp} | 1-Speed 2-Bullet 3-Damage 4-Health (Cost: {UPGRADE_COST})", True, WHITE)
+            hud = font.render(f"EXP: {player.exp} | Level: {player.level} | Kills: {player.bot_kills} | 1-Speed 2-Bullet 3-Damage 4-Health (Cost: {UPGRADE_COST})", True, WHITE)
             diff_text = font.render(f"Difficulty: {difficulty_level}", True, WHITE)
             WIN.blit(hud, (10, 10))
             WIN.blit(diff_text, (10, 30))
+
+            if show_specialization_menu:
+                spec_text = font.render("Choose Tank Type: 1-Dual 2-Twin 3-Heavy 4-Sniper", True, WHITE)
+                WIN.blit(spec_text, (WIDTH//2 - 180, HEIGHT//2))
         else:
             over_text = font.render("GAME OVER - Press R to Restart", True, RED)
             WIN.blit(over_text, (WIDTH//2 - 100, HEIGHT//2))
