@@ -162,6 +162,7 @@ def main():
                 bot.bullet_speed += difficulty_level * 0.3
                 bots.append(bot)
 
+# Bot AI (Nathan)
             for bot in bots[:]:
                 angle = math.atan2(player.y - bot.y, player.x - bot.x)
                 draw_barrel(WIN, bot, angle, cam_x, cam_y)
