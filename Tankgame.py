@@ -20,7 +20,7 @@ BG_COLOR = (30, 30, 30)
 
 # Game constants
 FPS = 60
-BOT_SPAWN_RATE = 100
+BOT_SPAWN_RATE = 50
 UPGRADE_COST = 5
 
 # Bullet class
@@ -139,7 +139,7 @@ def main():
                 bot.draw(WIN, cam_x, cam_y)
                 if bot.cooldown == 0:
                     bullets.append(bot.shoot(player.x, player.y))
-                    bot.cooldown = 60
+                    bot.cooldown = 120
                 else:
                     bot.cooldown -= 1
 
@@ -174,3 +174,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
