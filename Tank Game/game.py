@@ -8,6 +8,7 @@ from config import (
     BOT_SPAWN_RATE, MAX_BOTS, UPGRADE_COST
 )
 from core import Tank, Bullet, render_bullet
+from ai_helpers import init_bot_ai, update_bot_ai
 from upgrades import specialization_tree
 
 def reset_game():
@@ -35,6 +36,7 @@ def spawn_bot(difficulty_level, bot_id):
     # mounts: single aim gun using bot's base profile color
     bot.gun_mounts = bot.gun_mounts[:1]  # keep one mount
     bot.cooldown = 0
+    init_bot_ai(bot)
     return bot
 
 def main():
@@ -139,11 +141,9 @@ def main():
                 bot_id_counter += 1
                 bots.append(bot)
 
-            # Bot AI: aim and fire based on fire_rate
+            # Bot AI: orbiting movement with randomness and spacing, aim and fire based on fire_rate
             for bot in bots:
-                # Move a little towards player (optional)
-                # Simple line-of-sight approach
-                ang_to_player = math.atan2(player.y - bot.y, player.x - bot.x)
+                ang_to_player = update_bot_ai(bot, bots, player)
                 # fire control
                 bot.fire_cooldown -= 1
                 if bot.fire_cooldown <= 0:
