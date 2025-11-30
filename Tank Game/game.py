@@ -38,7 +38,63 @@ def spawn_bot(difficulty_level, bot_id):
     bot.cooldown = 0
     init_bot_ai(bot)
     return bot
+#Nathan Chong {
+def draw_border(win, cam_x, cam_y, player_x, player_y):
+    """Draw dashed slant border lines that fade based on proximity to edges."""
+    threshold = 200  # pixels from edge to start fading in
+    dash_length = 20
+    gap_length = 10
+    slant_angle = math.pi / 4  
 
+    # Distances to edges
+    dist_left = player_x
+    dist_right = WORLD_WIDTH - player_x
+    dist_top = player_y
+    dist_bottom = WORLD_HEIGHT - player_y
+
+    # Create a surface for the border with alpha
+    border_surf = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+    # Helper to draw dashed slant line along an edge
+    def draw_dashed_slant(start_x, start_y, end_x, end_y, color, alpha, direction):
+        # direction: 1 for /, -1 for \
+        dx = end_x - start_x
+        dy = end_y - start_y
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+        num_dashes = int(length / (dash_length + gap_length))
+        for i in range(num_dashes):
+            pos = i * (dash_length + gap_length) / length
+            x1 = start_x + dx * pos
+            y1 = start_y + dy * pos
+            x2 = x1 + math.cos(slant_angle) * dash_length * direction
+            y2 = y1 + math.sin(slant_angle) * dash_length * direction
+            pygame.draw.line(border_surf, (*color, alpha), (x1 - cam_x, y1 - cam_y), (x2 - cam_x, y2 - cam_y), 2)
+
+    # Top edge (slanting down-right)
+    if dist_top < threshold:
+        alpha = int(255 * (1 - dist_top / threshold))
+        draw_dashed_slant(0, 0, WORLD_WIDTH, 0, WHITE, alpha, 1)
+
+    # Bottom edge (slanting up-right)
+    if dist_bottom < threshold:
+        alpha = int(255 * (1 - dist_bottom / threshold))
+        draw_dashed_slant(0, WORLD_HEIGHT, WORLD_WIDTH, WORLD_HEIGHT, WHITE, alpha, -1)
+
+    # Left edge (slanting down-right)
+    if dist_left < threshold:
+        alpha = int(255 * (1 - dist_left / threshold))
+        draw_dashed_slant(0, 0, 0, WORLD_HEIGHT, WHITE, alpha, 1)
+
+    # Right edge (slanting down-left)
+    if dist_right < threshold:
+        alpha = int(255 * (1 - dist_right / threshold))
+        draw_dashed_slant(WORLD_WIDTH, 0, WORLD_WIDTH, WORLD_HEIGHT, WHITE, alpha, -1)
+
+    # Blit the border surface
+    win.blit(border_surf, (0, 0))
+#Nathan Chong }
 def main():
     pygame.init()
     WIN = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -60,6 +116,7 @@ def main():
         mouse_x, mouse_y = pygame.mouse.get_pos()
         cam_x = player.x - WIDTH // 2
         cam_y = player.y - HEIGHT // 2
+        draw_border(WIN, cam_x, cam_y, player.x, player.y)
 
         # Events
         for event in pygame.event.get():
