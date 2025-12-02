@@ -32,7 +32,7 @@ def spawn_bot(difficulty_level, bot_id):
     bot.base_bullet_speed += difficulty_level * 0.3
     bot.base_damage += difficulty_level * 2.0
     bot.speed += difficulty_level * 0.2
-    bot.fire_rate = 2.0 + 0.2 * difficulty_level  # bots also get faster fire rates
+    bot.fire_rate = 1.0 + 0.1 * difficulty_level  # bots also get faster fire rates
     # mounts: single aim gun using bot's base profile color
     bot.gun_mounts = bot.gun_mounts[:1]  # keep one mount
     bot.cooldown = 0
