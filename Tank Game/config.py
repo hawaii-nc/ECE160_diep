@@ -16,9 +16,9 @@ BG_COLOR = (30, 30, 30)
 
 # Game constants
 FPS = 60
-BOT_SPAWN_RATE = 100
+BOT_SPAWN_RATE = 50  # frames between bot spawns
 UPGRADE_COST = 5
-MAX_BOTS = 20
+MAX_BOTS = 5
 
 # Drone settings
 DRONE_SPEED = 4.0
