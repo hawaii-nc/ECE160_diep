@@ -1,4 +1,4 @@
-## Tank Game (Mk IV) — Pygame Project
+## Tank Game — Pygame Project
 
 This repository contains a single‑player top‑down tank shooter built with **Python** and **pygame**. The most up‑to‑date implementation lives in `Tank_Game_mkIV/` and includes:
 
