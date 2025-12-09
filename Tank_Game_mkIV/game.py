@@ -407,7 +407,7 @@ def main():
                     # Draw semi-transparent background with branch color tint
                     max_width = max(opt1_rect.width, opt2_rect.width, title_rect.width) + 40
                     bg_surf = pygame.Surface((max_width, 130), pygame.SRCALPHA)
-                    bg_color = (*branch_color, 100)  # Add alpha channel
+                    bg_color = (*branch_color, 180)  # Add alpha channel
                     bg_surf.fill(bg_color)
                     WIN.blit(bg_surf, (WIDTH // 2 - max_width // 2, HEIGHT // 2 - 80))
                     
@@ -421,4 +421,5 @@ def main():
         pygame.display.update()
 
 if __name__ == "__main__":
+
     main()
