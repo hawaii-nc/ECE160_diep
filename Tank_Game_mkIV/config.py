@@ -34,4 +34,3 @@ BARREL_LENGTH_SCALE = 5.0   # pixels per bullet_speed
 BARREL_WIDTH_BASE = 3       # base width in pixels
 BARREL_WIDTH_DAMAGE_SCALE = 0.2  # adds width per damage
 BARREL_WIDTH_RADIUS_SCALE = 0.8  # adds width per bullet radius
-
