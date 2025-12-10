@@ -35,28 +35,3 @@ BARREL_WIDTH_BASE = 3       # base width in pixels
 BARREL_WIDTH_DAMAGE_SCALE = 0.2  # adds width per damage
 BARREL_WIDTH_RADIUS_SCALE = 0.8  # adds width per bullet radius
 
-# --- ROOM SYSTEM CONFIG ---
-ROOM_ROWS = 2
-ROOM_COLS = 2
-
-ROOM_WIDTH = WORLD_WIDTH // ROOM_COLS      # 800
-ROOM_HEIGHT = WORLD_HEIGHT // ROOM_ROWS    # 600
-
-# Simple 4 rooms arranged in a 2×2 grid
-ROOMS = [
-    {"id": 0, "name": "Top-Left",     "rect": (0, 0, ROOM_WIDTH, ROOM_HEIGHT)},
-    {"id": 1, "name": "Top-Right",    "rect": (ROOM_WIDTH, 0, ROOM_WIDTH, ROOM_HEIGHT)},
-    {"id": 2, "name": "Bottom-Left",  "rect": (0, ROOM_HEIGHT, ROOM_WIDTH, ROOM_HEIGHT)},
-    {"id": 3, "name": "Bottom-Right", "rect": (ROOM_WIDTH, ROOM_HEIGHT, ROOM_WIDTH, ROOM_HEIGHT)},
-]
-
-# Optional room colors (you may use them for backgrounds)
-ROOM_COLORS = [
-    (65, 65, 140),
-    (90, 50, 100),
-    (65, 120, 60),
-    (150, 110, 50),
-]
-
-# Doorway widths
-DOOR_SIZE = 120
