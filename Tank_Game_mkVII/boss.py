@@ -106,7 +106,7 @@ class BossManager:
         self.active = False
         self.boss = None
         self.boss_bullets = []
-        self.unlock_kills = 30
+        self.unlock_kills = 10
         # UI rect (unused for text UI)
         self.btn_w, self.btn_h = 140, 36
         self.btn_rect = pygame.Rect(WIDTH - self.btn_w - 10, 10, self.btn_w, self.btn_h)
@@ -336,3 +336,4 @@ class BossManager:
         except Exception:
             pass
         # unlocked remains True for replay
+
